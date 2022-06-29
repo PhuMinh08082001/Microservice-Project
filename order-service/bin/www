@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var debug = require("debug")("gateway-service:server");
+var http = require("http");
+var configAPI = require("../app/api/ConfigServerAPI");
+require("dotenv").config();
+/**
+ * Get port from environment and store in Express.
+ */
+
+// const client = require("cloud-config-client");
+async function gatewayServiceApplication() {
+  let config = await configAPI.getConfig();
+  let port = config["server.port"];
+
+  process.env.USER = config["database.user"];
+  process.env.HOST = config["database.host"];
+  process.env.DATABASE = config["database.name"];
+  process.env.PASSWORD = config["database.password"];
+  process.env.PORTDB = config["database.port"];
+
+  let app = require("../app");
+  app.set("port", port);
+
+  let server = http.createServer(app);
+
+  server.listen(port);
+  console.log("Local address: localhost:" + port);
+}
+
+gatewayServiceApplication();

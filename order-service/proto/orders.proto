@@ -1,0 +1,57 @@
+syntax = "proto3";  
+
+message Order{
+    int32 id = 1;
+    int32 user_id = 2;
+    int32 total = 3;
+    string status = 4;
+    repeated Product products = 5;
+}
+
+message Product{
+    int32 product_id = 1;
+    int32 quantity = 2;
+    int32 price = 3;
+}
+
+message OrderRequestId {
+    int32 id = 1;
+}
+
+message UserRequestId {
+    int32 userId = 1;
+}
+
+message OrderResponseMade {
+    int32 id = 1;
+}
+
+message OrderDetailRequest{
+    repeated OrderDetail orderdetails = 1;
+}
+message OrderDetail{
+    int32 order_id = 1;
+    int32 productId = 2;
+    int32 price = 3;
+    int32 quantity = 4;
+}
+
+message OrderDetailResponse{
+    repeated int32 ids = 1;
+}
+
+message StatusResponse{
+    string status = 1;
+}
+
+
+
+service OrderService {
+    rpc GetOrderById(OrderRequestId) returns (Order) {}
+    rpc MakeOrder(UserRequestId) returns (OrderResponseMade){}
+    rpc MakeOrderDetail(OrderDetailRequest) returns (OrderDetailResponse){}
+    rpc ChangeStatusPayment(OrderRequestId) returns (StatusResponse){}
+    rpc RollbackPayment(OrderRequestId) returns (StatusResponse){}
+}
+
+

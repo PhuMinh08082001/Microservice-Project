@@ -1,7 +1,9 @@
 const userAPI = require("../api/UserAPI");
 const productAPI = require("../api/ProductAPI");
 const orderAPI = require("../api/OrderAPI");
-
+const userGrpcAPI = require("../api/grpc/UserGrpcApi");
+const productGrpcAPI = require("../api/ProductGrpcApi");
+const orderGrpcAPI = require("../api/OrderGrpcApi");
 var Command = function (execute, rollback, argument) {
   this.execute = execute;
   this.rollback = rollback;
@@ -15,8 +17,8 @@ var DeductCommand = function (userId, totalCost) {
   });
 };
 
-var RefundCommand = function (userId, totalCost) {
-  return new Command(userAPI.refundMoney, userAPI.deductMoney, {
+var DeductCommandGrpc = function (userId, totalCost) {
+  return new Command(userGrpcAPI.deductMoney, userGrpcAPI.refundMoney, {
     userId: userId,
     amount: totalCost,
   });
@@ -25,15 +27,15 @@ var RefundCommand = function (userId, totalCost) {
 var CalInventoryCommand = function (productOrderReq) {
   return new Command(
     productAPI.checkAndCalculateInventory,
-    productAPI.checkAndCalculateInventory,
+    productAPI.rollbackInventory,
     { productOrderReq: productOrderReq }
   );
 };
 
-var RollbackInventoryCommand = function (productOrderReq) {
+var CalInventoryCommandGrpc = function (productOrderReq) {
   return new Command(
-    productAPI.rollbackInventory,
-    productAPI.checkAndCalculateInventory,
+    productGrpcAPI.checkAndCalculateInventory,
+    productGrpcAPI.rollbackInventory,
     { productOrderReq: productOrderReq }
   );
 };
@@ -44,16 +46,21 @@ var CompletePaymentCommand = function (orderId) {
   });
 };
 
-var RollbackPaymentCommand = function (orderId) {
-  return new Command(orderAPI.rollbackPayment, orderAPI.completePayment, {
-    orderId: orderId,
-  });
+var CompletePaymentCommandGrpc = function (orderId) {
+  return new Command(
+    orderGrpcAPI.completePayment,
+    orderGrpcAPI.rollbackPayment,
+    {
+      orderId: orderId,
+    }
+  );
 };
+
 module.exports = {
   DeductCommand,
-  RefundCommand,
   CalInventoryCommand,
-  RollbackInventoryCommand,
   CompletePaymentCommand,
-  RollbackPaymentCommand,
+  DeductCommandGrpc,
+  CalInventoryCommandGrpc,
+  CompletePaymentCommandGrpc,
 };

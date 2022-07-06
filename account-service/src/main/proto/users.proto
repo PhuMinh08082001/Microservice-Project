@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package com.banvien.training;
+
+message UserRequest{
+  int32 id = 1;
+}
+
+message UserResponse{
+  int32 user_id = 1;
+}
+
+message UserPaymentRequest{
+  int32 user_id = 1;
+  int32 amount = 2;
+}
+
+message StatusPaymentResponse{
+  string status = 1;
+}
+
+service UserService {
+  rpc GetUser(UserRequest) returns (UserResponse){}
+  rpc DeductMoney(UserPaymentRequest) returns (StatusPaymentResponse){}
+  rpc RefundMoney(UserPaymentRequest) returns(StatusPaymentResponse){}
+}

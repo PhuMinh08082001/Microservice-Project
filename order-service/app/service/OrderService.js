@@ -6,6 +6,16 @@ class OrderService {
       let order = await DB("ordertable")
         .returning("id")
         .insert({ user_id: userId });
+
+      if (typeof order == "undefined")
+        throw new Error("Order " + orderId + " not found");
+
+      let orderDetail = await DB("order_detail")
+        .select("product_id", "quantity", "price")
+        .where({ order_id: orderId });
+
+      order["products"] = orderDetail;
+
       return order;
     } catch (e) {
       throw new Error(error.message);

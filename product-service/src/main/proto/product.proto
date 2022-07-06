@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package com.banvien.training;
+
+message ProductRequestIds{
+  repeated int32 id = 1;
+}
+
+message ProductResponseNames{
+  repeated string name = 1;
+}
+message ProductOrderRequest{
+  repeated ProductRequest products = 1;
+}
+
+message ProductRequest{
+  int32 productId = 1;
+  int32 quantity = 2;
+}
+
+message ProductOrderResponse{
+  repeated ProductResponse products = 1;
+}
+
+message ProductResponse{
+  int32 productId = 1;
+  int32 price = 2;
+  int32 quantity = 3;
+}
+
+message StatusResponse{
+  string status = 1;
+}
+
+
+service ProductService {
+  rpc GetNameProducts(ProductRequestIds) returns (ProductResponseNames){}
+  rpc GetListProductsInOrder(ProductOrderRequest) returns(ProductOrderResponse){}
+  rpc CheckAndCalculateInventory(ProductOrderRequest) returns(StatusResponse){}
+  rpc RollbackInventory(ProductOrderRequest) returns(StatusResponse){}
+}

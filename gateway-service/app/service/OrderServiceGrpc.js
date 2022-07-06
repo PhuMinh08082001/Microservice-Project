@@ -1,64 +1,54 @@
-const userAPI = require("../api/UserAPI");
-const productAPI = require("../api/ProductAPI");
-const orderAPI = require("../api/OrderAPI");
-const productService = require("./ProductService");
-const userService = require("./UserService");
-var TaskScheduler = require("../ultils/TaskScheduler");
+const orderGrpcAPI = require("../api/OrderGrpcApi");
+const productServiceGrpc = require("../service/ProductServiceGrpc");
+const userGrpcAPI = require("../api/grpc/UserGrpcApi");
+const productGrpcAPI = require("../api/ProductGrpcApi");
 var {
   DeductCommand,
   CalInventoryCommand,
   CompletePaymentCommand,
+  DeductCommandGrpc,
+  CalInventoryCommandGrpc,
+  CompletePaymentCommandGrpc,
 } = require("../ultils/Command");
-class OrderService {
+var TaskScheduler = require("../ultils/TaskScheduler");
+class OrderServiceGrpc {
   async makeOrder(orderDetail) {
-    await userAPI.getUser(orderDetail.userId);
-    let products = await productAPI.getListProductsOrder(orderDetail.products);
+    await userGrpcAPI.getUser(orderDetail.userId);
+    let products = await productGrpcAPI.getListProductsOrder(
+      orderDetail.products
+    );
 
-    let order = await orderAPI.createNewOrder(orderDetail.userId);
+    let order = await orderGrpcAPI.createNewOrder(orderDetail.userId);
 
     let orderDetailRequest = products.map((element) =>
       Object.assign({ order_id: order.id }, element)
     );
 
-    await orderAPI.createOrderDetail(orderDetailRequest);
+    await orderGrpcAPI.createOrderDetail(orderDetailRequest);
 
     console.log("successfully");
     return { message: "Order " + order.id + " .You ordered succeed." };
   }
 
   async getOrderById(orderId) {
-    let orderBill = await orderAPI.getOrderById(orderId);
+    let orderBill = await orderGrpcAPI.getOrderById(orderId);
     let productIds = orderBill.products;
 
-    //assign product's name
     if (productIds.length > 0) {
       productIds = productIds.map((item) => item.product_id);
-      let productsName = await productService.getListProductsName(productIds);
+      let productsName = await productServiceGrpc.getListProductsName(
+        productIds
+      );
       orderBill.products = orderBill.products.map((x, i) =>
-        Object.assign({ name: productsName[i] }, x)
+        Object.assign({ name: productsName.name[i] }, x)
       );
     }
 
     return orderBill;
   }
 
-  async getOrderWithStatus(userId, status) {
-    let user = await userService.getUser(userId);
-    let orderIds = await orderAPI.getOrderIds(userId, status);
-
-    orderIds = orderIds.map((item) => parseInt(item.id));
-
-    let orders = [];
-    for (const i in orderIds) {
-      let order = await this.getOrderById(orderIds[i]);
-      orders.push(order);
-    }
-
-    return orders;
-  }
-
   async handlePayment(userId, orderId) {
-    let user = await userAPI.getUser(userId);
+    let user = await userGrpcAPI.getUser(userId);
     let orderBill = await this.getOrderById(orderId);
     if (orderBill.user_id != userId)
       throw new Error(
@@ -78,9 +68,9 @@ class OrderService {
     // let completePayment;
     let taskScheduler = new TaskScheduler();
     try {
-      await taskScheduler.execute(new DeductCommand(userId, totalCost));
-      await taskScheduler.execute(new CalInventoryCommand(productOrderReq));
-      await taskScheduler.execute(new CompletePaymentCommand(orderId));
+      await taskScheduler.execute(new DeductCommandGrpc(userId, totalCost));
+      await taskScheduler.execute(new CalInventoryCommandGrpc(productOrderReq));
+      await taskScheduler.execute(new CompletePaymentCommandGrpc(orderId));
     } catch (error) {
       while (taskScheduler.getCommands().length > 0) {
         await taskScheduler.rollback();
@@ -91,4 +81,4 @@ class OrderService {
   }
 }
 
-module.exports = new OrderService();
+module.exports = new OrderServiceGrpc();

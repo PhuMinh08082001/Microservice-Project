@@ -1,17 +1,40 @@
-#!/usr/bin/env node
+var grpc = require("@grpc/grpc-js");
+var protoLoader = require("@grpc/proto-loader");
+// var PROTO_PATH = __dirname + "/orders.proto";
+var PROTO_PATH = __dirname + "/../proto/orders.proto";
+var packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+  keepCase: true,
+  longs: String,
+  enums: String,
+  defaults: true,
+  oneofs: true,
+});
 
-/**
- * Module dependencies.
- */
+const orderServiceGrpc = require("../app/service/OrderServiceGrpc");
+var protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
+var orderService = protoDescriptor;
 
 var debug = require("debug")("gateway-service:server");
 var http = require("http");
 var configAPI = require("../app/api/ConfigServerAPI");
+const DB = require("../config/knexDB");
+
 require("dotenv").config();
 /**
  * Get port from environment and store in Express.
  */
 
+function getServerGrpc() {
+  let serverGrpc = new grpc.Server();
+  serverGrpc.addService(orderService.OrderService.service, {
+    getOrderById: orderServiceGrpc.getOrderById,
+    makeOrder: orderServiceGrpc.makeOrder,
+    makeOrderDetail: orderServiceGrpc.makeOrderDetail,
+    changeStatusPayment: orderServiceGrpc.changeStatusPayment,
+    rollbackPayment: orderServiceGrpc.rollbackPayment,
+  });
+  return serverGrpc;
+}
 // const client = require("cloud-config-client");
 async function gatewayServiceApplication() {
   let config = await configAPI.getConfig();
@@ -27,9 +50,19 @@ async function gatewayServiceApplication() {
   app.set("port", port);
 
   let server = http.createServer(app);
-
   server.listen(port);
+
+  let routeServer = getServerGrpc();
+  routeServer.bindAsync(
+    "127.0.0.1:9910",
+    grpc.ServerCredentials.createInsecure(),
+    () => {
+      routeServer.start();
+    }
+  );
+
   console.log("Local address: localhost:" + port);
+  console.log("Server GRPC: " + "localhost:9910");
 }
 
 gatewayServiceApplication();

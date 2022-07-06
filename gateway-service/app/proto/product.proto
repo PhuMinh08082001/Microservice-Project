@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+
+
+message ProductRequestIds{
+  repeated int32 id = 1;
+}
+
+message ProductResponseNames{
+  repeated string name = 1;
+}
+
+service ProductService {
+  rpc GetNameProducts(ProductRequestIds) returns (ProductResponseNames){}
+}
